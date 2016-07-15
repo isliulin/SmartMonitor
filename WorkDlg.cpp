@@ -5,42 +5,45 @@
 #include "afxdialogex.h"
 
 // WorkDlg 对话框
+
 IMPLEMENT_DYNAMIC(WorkDlg, CDialogEx)
 
 WorkDlg::WorkDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(WorkDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDI_ICON1);
+	IsHighPlaying = FALSE;
+	HighVideoPath =
+		_T("http://admin:admin@192.168.1.2/ipcam/mpeg4.cgi");
 
+	BehaviorVideoPath =
+		_T("http://admin:admin@192.168.1.2/ipcam/mpeg4.cgi");
+
+	MillVideoPath =
+		_T("http://admin:admin@192.168.1.2/ipcam/mpeg4.cgi");
+
+	MoreVideoPath =
+		_T("http://admin:admin@192.168.1.2/ipcam/mpeg4.cgi");
+
+	IsHighPlaying = FALSE;
+	IsMillPlaying = FALSE;
+	IsHighPlaying = FALSE;
 	HighWorkDetecting = FALSE;
 	BehaviorDetecting = FALSE;
 	MillDetecting = FALSE;
-
+	MillCollecting = FALSE;
+	BehaviorCollecting = FALSE;
+	HighCollecting = FALSE;
+	MoreCollecting = FALSE;
+	MillRecording = FALSE;
+	BehaviorRecording = FALSE;
+	HighRecording = FALSE;
+	MoreRecording = FALSE;
 
 	CString Date= "D:\\Record\\"+GetDate();
 	CreateDirectory(Date,NULL);
-	ClearPhoneFile();
-
-	try
-	{
-		NoPic = imread("NoPic.jpg");
-	}
-	catch (...)
-	{
-		AfxMessageBox("图片文件缺失！");
-	}
-
-	if (NoPic.empty()==false)
-	{
-		CString path = "D:\\施工现场监控信息\\notificationPhoto\\" + GetSaveTime()+".jpg";
-		cvSaveImage(path,
-			&(IplImage)NoPic);
-	}
-
 
 }
-
-
 
 
 WorkDlg::~WorkDlg()
@@ -49,24 +52,24 @@ WorkDlg::~WorkDlg()
 }
 
 
-
-
 void WorkDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_PICTURE, HighPic);
-	DDX_Control(pDX, IDC_LIST1_HIGH, HighGrid);
+	DDX_Control(pDX, IDC_LIST1_HIGH, m_highgrid);
+	DDX_Text(pDX, IDC_EDIT1, HighVideoPath);
 	DDX_Control(pDX, IDC_LIST1, m_gridcom);
 	DDX_Control(pDX, IDC_MSCOMM1, m_Comm);
 	DDX_Control(pDX, IDC_COMBO1, m_ComSel);
-	DDX_Control(pDX, IDC_LIST1_HIGH2, BehaviorGrid);
-	DDX_Control(pDX, IDC_LIST1_HIGH3, MillGrid);
+	DDX_Text(pDX, IDC_EDIT2, BehaviorVideoPath);
+	DDX_Text(pDX, IDC_EDIT4, MillVideoPath);
+	DDX_Text(pDX, IDC_EDIT5, MoreVideoPath);
+	DDX_Control(pDX, IDC_LIST1_HIGH2, m_BehaviorGrid);
+	DDX_Control(pDX, IDC_LIST1_HIGH3, m_MillGrid);
 	DDX_Control(pDX, IDC_PICTURE2, BehaviorPic);
 	DDX_Control(pDX, IDC_PICTURE3, MillPic);
 	DDX_Control(pDX, IDC_PICTURE4, MorePic);
 }
-
-
 
 
 BEGIN_MESSAGE_MAP(WorkDlg, CDialogEx)
@@ -82,6 +85,8 @@ BEGIN_MESSAGE_MAP(WorkDlg, CDialogEx)
 	ON_WM_CONTEXTMENU()
 	ON_COMMAND(ID_EMPTY_GRID, &WorkDlg::OnEmptyGrid)
 	ON_COMMAND(ID_REFRESH, &WorkDlg::OnRefresh)
+	ON_BN_CLICKED(IDC_BUTTON11, &WorkDlg::OnSelectHighVideo)
+	ON_BN_CLICKED(IDC_BUTTON12, &WorkDlg::OnSelectHighVideo)
 	ON_CBN_SELCHANGE(IDC_COMBO1, &WorkDlg::OnComSelect)
 	ON_BN_CLICKED(IDC_BUTTON13, &WorkDlg::OnDetectAngle)
 	ON_BN_CLICKED(IDC_BUTTON14, &WorkDlg::OnAngleStop)
@@ -93,6 +98,9 @@ BEGIN_MESSAGE_MAP(WorkDlg, CDialogEx)
 	ON_COMMAND(ID_32793, &WorkDlg::OnFaceRecognize)
 	ON_COMMAND(ID_32794, &WorkDlg::OnOpenDoc)
 	ON_COMMAND(ID_32795, &WorkDlg::OnOrgDoc)
+	ON_BN_CLICKED(IDC_BUTTON8, &WorkDlg::OnSelectBehaviorPath)
+	ON_BN_CLICKED(IDC_BUTTON25, &WorkDlg::OnSelectMillPath)
+	ON_BN_CLICKED(IDC_BUTTON28, &WorkDlg::OnSelectMorePath)
 	ON_BN_CLICKED(IDC_BUTTON21, &WorkDlg::OnLinkBehaviorVideo)
 	ON_BN_CLICKED(IDC_BUTTON27, &WorkDlg::OnLinkMillVideo)
 	ON_BN_CLICKED(IDC_BUTTON30, &WorkDlg::OnLinkMoreVideo)
@@ -100,6 +108,8 @@ BEGIN_MESSAGE_MAP(WorkDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON26, &WorkDlg::OnExitMillVideo)
 	ON_BN_CLICKED(IDC_BUTTON29, &WorkDlg::OnExitMoreVideo)
 	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_BUTTON39, &WorkDlg::OnPausePlay)
+	ON_BN_CLICKED(IDC_BUTTON40, &WorkDlg::OnResumePlay)
 	ON_BN_CLICKED(IDC_BUTTON38, &WorkDlg::OnRecordHighVideo)
 	ON_BN_CLICKED(IDC_BUTTON37, &WorkDlg::OnStopHighRecord)
 	ON_BN_CLICKED(IDC_BUTTON36, &WorkDlg::OnRecordBehavior)
@@ -112,8 +122,6 @@ BEGIN_MESSAGE_MAP(WorkDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
-
-
 // WorkDlg 消息处理程序
 BOOL WorkDlg::OnInitDialog()
 {
@@ -124,23 +132,24 @@ BOOL WorkDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	m_ComSel.SetCurSel(0);
-
+	m_choosing = FALSE;
+	
 
 	//状态栏
-	StatusBar.Create(WS_CHILD|WS_VISIBLE|SBT_OWNERDRAW, 
+	m_StatusBar.Create(WS_CHILD|WS_VISIBLE|SBT_OWNERDRAW, 
 		CRect(0,0,0,0), this, 0);
 
 	int strPartDim[5]= {100,300,500,700,-1}; //分割数量,使用坐标
-	StatusBar.SetParts(5, strPartDim);
+	m_StatusBar.SetParts(5, strPartDim);
 
 	//设置状态栏文本
-	StatusBar.SetText("系统状态", 0, 0);
-	StatusBar.SetText("就绪", 1, 0);
-	StatusBar.SetText("就绪", 2, 0);
-	StatusBar.SetText("就绪", 3, 0);
-	StatusBar.SetText("就绪", 4, 0);
+	m_StatusBar.SetText("系统状态", 0, 0);
+	m_StatusBar.SetText("就绪", 1, 0);
+	m_StatusBar.SetText("就绪", 2, 0);
+	m_StatusBar.SetText("就绪", 3, 0);
+	m_StatusBar.SetText("就绪", 4, 0);
 
-	StatusBar.ShowWindow(SW_SHOW);
+	m_StatusBar.ShowWindow(SW_SHOW);
 
 
 	//onsize大小随着对话框大小变化而变化
@@ -153,51 +162,51 @@ BOOL WorkDlg::OnInitDialog()
 	InitializeCriticalSection(&DetectionCritical);
 
 	//设置list显示
-	HighGrid.SetExtendedStyle(LVS_EX_FLATSB
+	m_highgrid.SetExtendedStyle(LVS_EX_FLATSB
 		|LVS_EX_FULLROWSELECT
 		|LVS_EX_HEADERDRAGDROP
 		|LVS_EX_ONECLICKACTIVATE
 		|LVS_EX_GRIDLINES);
 
-	HighGrid.ModifyStyle( 0, LVS_REPORT );
+	m_highgrid.ModifyStyle( 0, LVS_REPORT );
 
-	HighGrid.InsertColumn(0,"检测时间");        //插入列
-	HighGrid.InsertColumn(1,"高空作业情况");   
+	m_highgrid.InsertColumn(0,"检测时间");        //插入列
+	m_highgrid.InsertColumn(1,"高空作业情况");   
 	   
-	HighGrid.SetColumnWidth(0,125);       //设置列的宽度。
-	HighGrid.SetColumnWidth(1,160);
+	m_highgrid.SetColumnWidth(0,125);       //设置列的宽度。
+	m_highgrid.SetColumnWidth(1,160);
 
 
 	//行为
-	BehaviorGrid.SetExtendedStyle(LVS_EX_FLATSB
+	m_BehaviorGrid.SetExtendedStyle(LVS_EX_FLATSB
 		|LVS_EX_FULLROWSELECT
 		|LVS_EX_HEADERDRAGDROP
 		|LVS_EX_ONECLICKACTIVATE
 		|LVS_EX_GRIDLINES);
 
-	BehaviorGrid.ModifyStyle( 0, LVS_REPORT );
+	m_BehaviorGrid.ModifyStyle( 0, LVS_REPORT );
 
-	BehaviorGrid.InsertColumn(0,"检测时间");        //插入列
-	BehaviorGrid.InsertColumn(1,"施工现场行为检测");   
+	m_BehaviorGrid.InsertColumn(0,"检测时间");        //插入列
+	m_BehaviorGrid.InsertColumn(1,"施工现场行为检测");   
 
-	BehaviorGrid.SetColumnWidth(0,125);       //设置列的宽度。
-	BehaviorGrid.SetColumnWidth(1,160);
+	m_BehaviorGrid.SetColumnWidth(0,125);       //设置列的宽度。
+	m_BehaviorGrid.SetColumnWidth(1,160);
 
 
 	//绞磨机
-	MillGrid.SetExtendedStyle(LVS_EX_FLATSB
+	m_MillGrid.SetExtendedStyle(LVS_EX_FLATSB
 		|LVS_EX_FULLROWSELECT
 		|LVS_EX_HEADERDRAGDROP
 		|LVS_EX_ONECLICKACTIVATE
 		|LVS_EX_GRIDLINES);
 
-	MillGrid.ModifyStyle( 0, LVS_REPORT );
+	m_MillGrid.ModifyStyle( 0, LVS_REPORT );
 
-	MillGrid.InsertColumn(0,"检测时间");        //插入列
-	MillGrid.InsertColumn(1,"绞磨机作业检测");   
+	m_MillGrid.InsertColumn(0,"检测时间");        //插入列
+	m_MillGrid.InsertColumn(1,"绞磨机作业检测");   
 
-	MillGrid.SetColumnWidth(0,125);       //设置列的宽度。
-	MillGrid.SetColumnWidth(1,160);
+	m_MillGrid.SetColumnWidth(0,125);       //设置列的宽度。
+	m_MillGrid.SetColumnWidth(1,160);
 
 
 	m_gridcom.SetExtendedStyle(LVS_EX_FLATSB
@@ -228,14 +237,12 @@ BOOL WorkDlg::OnInitDialog()
 		file.Close();
 	}
 
-	//SDK初始化
-	H264_DVR_Init(NULL,NULL);
+	SetTimer(2,60000,NULL);
 
+	//SetTimer(3,100,NULL);程序启动后自动连接摄像头
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE
 }
-
-
 
 void WorkDlg::OnPaint()
 {
@@ -245,26 +252,95 @@ void WorkDlg::OnPaint()
 	CDialogEx::OnPaint();	
 }
 
+//选择点
+void WorkDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (m_choosing)
+	{
+		if (m_Dot.size( )!=4)
+		{
+			m_Dot.push_back(point);
+		}
+	}
+	
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
 
 //开始选择，重新选择
 void WorkDlg::OnSelectMoniterArea()
 {
 	// TODO: 在此添加控件通知处理程序代码
-
+	m_choosing = TRUE;
+	m_Dot.clear();
+	PointArray.clear();
+	DrawToScreen(HighPic,HighImg);
 }
-
-
-
-
 
 //取消选择
 void WorkDlg::OnCancelSelect()
 {
 	// TODO: 在此添加控件通知处理程序代码
-
+	m_Dot.clear();
+	m_choosing = FALSE;
+	PointArray.clear();
+	//绘制选择区域到控件上
 }
 
+//确认选择
+void WorkDlg::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (m_Dot.size()==4)
+	{
+		//在picture控件中绘图
+		int width;
+		int height;
+		CRect tempRect;
+		HighPic.GetWindowRect(&tempRect);
+		ScreenToClient(tempRect);
+		PointArray.clear();
+		for(int i=0;i<4;i++)
+		{
+			POINT Adder;
+			Adder.x = (tempRect.TopLeft()).x;
+			Adder.y = (tempRect.TopLeft()).y;
+			POINT m_ExactDot;
+			//图片控件上的坐标
+			m_ExactDot.x = m_Dot[i].x - Adder.x;
+			m_ExactDot.y = m_Dot[i].y - Adder.y;
 
+			if (HighImg.empty()==FALSE)
+			{
+				width = HighImg.cols;
+				height = HighImg.rows;
+			}
+			else
+			{
+				return;
+			}
+	     
+			POINT m_RealDot;
+			m_RealDot.x = m_ExactDot.x*width/tempRect.Width();
+			m_RealDot.y = m_ExactDot.y*height/tempRect.Height();
+			//原图片上的真实点位
+			PointArray.push_back(cvPoint(m_RealDot.x,m_RealDot.y));
+		
+		}
+		//OnLButtonUp要修改
+		if (m_choosing==TRUE)
+		{
+			Mat imgCopy = HighImg.clone();
+			DrawSelectedArea(&(IplImage)imgCopy,PointArray);
+			//绘制选择区域到控件上
+			DrawToScreen(HighPic,imgCopy);
+			m_choosing = FALSE;
+		}
+	
+	}
+	CDialogEx::OnLButtonUp(nFlags, point);
+
+}
 
 
 void WorkDlg::OnDestroy()
@@ -273,10 +349,8 @@ void WorkDlg::OnDestroy()
 
 	// TODO: 在此处添加消息处理程序代码
 	KillTimer(1);
-	H264_DVR_Cleanup();
+
 }
-
-
 
 
 void WorkDlg::OnSize(UINT nType, int cx, int cy)
@@ -330,8 +404,6 @@ void WorkDlg::OnSize(UINT nType, int cx, int cy)
 }
 
 
-
-
 BOOL WorkDlg::PreTranslateMessage(MSG* pMsg)
 {
 	// TODO: 在此添加专用代码和/或调用基类
@@ -351,9 +423,6 @@ BOOL WorkDlg::PreTranslateMessage(MSG* pMsg)
 }
 
 
-
-
-
 void WorkDlg::OnContextMenu(CWnd* pWnd, CPoint point)
 {
 	// TODO: 在此处添加消息处理程序代码
@@ -363,23 +432,16 @@ void WorkDlg::OnContextMenu(CWnd* pWnd, CPoint point)
 		point.x, point.y, this);
 }
 
-
-
-
 void WorkDlg::OnEmptyGrid()
 {
 	// TODO: 在此添加命令处理程序代码
-	HighGrid.DeleteAllItems();
+	m_highgrid.DeleteAllItems();
 	m_gridcom.DeleteAllItems();
-	BehaviorGrid.DeleteAllItems();
-	MillGrid.DeleteAllItems();
+	m_BehaviorGrid.DeleteAllItems();
+	m_MillGrid.DeleteAllItems();
 	
 	UpdateData(FALSE);
 }
-
-
-
-
 
 void WorkDlg::OnRefresh()
 {
@@ -388,16 +450,26 @@ void WorkDlg::OnRefresh()
 
 }
 
+void WorkDlg::OnSelectHighVideo()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CFileDialog dlg(TRUE,NULL,NULL,OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT,
+		NULL,AfxGetMainWnd()); //open
 
+	if (dlg.DoModal()==IDOK)
+	{
+		HighVideoPath = dlg.GetPathName();
+
+		UpdateData(FALSE);
+	}
+
+}
 
 
 //传感器
 BEGIN_EVENTSINK_MAP(WorkDlg, CDialogEx)
 	ON_EVENT(WorkDlg, IDC_MSCOMM1, 1, WorkDlg::OnCommMscomm, VTS_NONE)
 END_EVENTSINK_MAP()
-
-
-
 
 
 void WorkDlg::OnCommMscomm()
@@ -459,21 +531,18 @@ void WorkDlg::OnCommMscomm()
 
 
 					//手机报警系统—120s内不重复发送
-					static time_t LastTime = 0;
-					static time_t PresentTime = 0;
-					static time_t Span = 0;
+					static long LastTime = 0;
+					static long PresentTime = 0;
+					static long Span = 0;
 					PresentTime = time(0);
 					Span = PresentTime - LastTime;
-					 if (Span>4)
+					 if (Span>120)
 					 {
 						LastTime = PresentTime;
 						WriteToCommandLine("7");
-						if (NoPic.empty()==false)
-						{
-							cvSaveImage("D:\\施工现场监控信息\\notificationPhoto\\NoPic.jpg",
-								&(IplImage)NoPic);
-						}
-	
+						Mat Gun = imread("NoPic");
+						cvSaveImage("D:\\施工现场监控信息\\notificationPhoto\\Gun.jpg",
+							&(IplImage)Gun);
 					 }
 
 				}
@@ -499,9 +568,6 @@ void WorkDlg::OnCommMscomm()
 	}
 
 }
-
-
-
 
 
 void WorkDlg::OnComSelect()
@@ -531,9 +597,6 @@ void WorkDlg::OnComSelect()
 	}
 
 }
-
-
-
 
 
 void WorkDlg::OnDetectAngle()
@@ -579,6 +642,23 @@ void WorkDlg::OnTimer(UINT_PTR nIDEvent)
 		{
 			KillTimer(1);
 		}
+	}
+
+
+	if (nIDEvent==2)
+	{
+		OnPausePlay();
+		Sleep(200);
+		OnResumePlay();
+	}
+
+	if (nIDEvent==3)
+	{
+		 KillTimer(3);
+		 OnLinkHighVideo();
+		 OnLinkBehaviorVideo();
+		 OnLinkMillVideo();
+		 OnLinkMoreVideo();
 	}
 
 	CDialogEx::OnTimer(nIDEvent);
@@ -666,9 +746,7 @@ void WorkDlg::OnStartPhoneSystem()
 {
 	// TODO: 在此添加命令处理程序代码
 	ShellExecute(NULL,"open",
-		//"F:\\NTF8-8\\NTFClient.jar",
 		"E:\\监控系统相关资料\\NTFClient\\NTFClient.exe",
-		//F:\NTF8-8
 		NULL,
 		NULL,SW_SHOWNORMAL);
 }
@@ -679,7 +757,7 @@ void WorkDlg::OnFaceRecognize()
 {
 	// TODO: 在此添加命令处理程序代码
 	ShellExecute(NULL,"open",
-		"E:\\人脸打卡系统\\FaceRegSystem\\Debug\\FaceRegSystem.exe",
+		"E:\\人脸打卡系统\\Debug\\Moniter.exe",
 		NULL,
 		NULL,SW_SHOWNORMAL);
 }
@@ -712,12 +790,73 @@ void WorkDlg::OnOrgDoc()
 }
 
 
+void WorkDlg::OnSelectBehaviorPath()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CFileDialog dlg(TRUE,NULL,NULL,OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT,
+		NULL,AfxGetMainWnd()); //open
+
+	if (dlg.DoModal()==IDOK)
+	{
+		BehaviorVideoPath = dlg.GetPathName();
+
+		UpdateData(FALSE);
+	}
+
+
+}
+
+
+void WorkDlg::OnSelectMillPath()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CFileDialog dlg(TRUE,NULL,NULL,OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT,
+		NULL,AfxGetMainWnd()); //open
+
+	if (dlg.DoModal()==IDOK)
+	{
+		MillVideoPath = dlg.GetPathName();
+
+		UpdateData(FALSE);
+	}
+
+
+
+}
+
+
+void WorkDlg::OnSelectMorePath()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CFileDialog dlg(TRUE,NULL,NULL,OFN_HIDEREADONLY|OFN_OVERWRITEPROMPT,
+		NULL,AfxGetMainWnd()); //open
+
+	if (dlg.DoModal()==IDOK)
+	{
+		MoreVideoPath = dlg.GetPathName();
+		UpdateData(FALSE);
+	}
+
+}
+
 
 void WorkDlg::OnLinkBehaviorVideo()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	UpdateData(TRUE);
+	IsBehaviorPlaying = FALSE;
+	BehaviorCollecting = FALSE;
+	Sleep(100);
 
+	CreateThread(NULL,0,BehaviorPlayerProc,NULL,0,NULL);
+	
+	if (BehaviorDetecting==FALSE)
+	{
+		CreateThread(NULL,0,BeheviorDetectProc,NULL,0,NULL);
+	}
 
+	CreateThread(NULL,0,BehaviorDataGetProc,
+		NULL,0,NULL);
 
 }
 
@@ -725,35 +864,40 @@ void WorkDlg::OnLinkBehaviorVideo()
 void WorkDlg::OnLinkMillVideo()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	UpdateData(TRUE);
+	IsMillPlaying = FALSE;
+	MillCollecting = FALSE;
+	Sleep(100);
 
+	
+	CreateThread(NULL,0,MillPlayerProc,NULL,0,NULL);
+	
+	if (MillDetecting==FALSE)
+	{
+		CreateThread(NULL,0,MillDetectProc,NULL,0,NULL);
+	}
 
-
+	CreateThread(NULL,0,MillDataGetProc,NULL,0,NULL);
 
 }
 
 void WorkDlg::OnLinkHighVideo()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	UpdateData(TRUE);
+    IsHighPlaying = FALSE;
+	HighCollecting = FALSE;
+	Sleep(100);
 
-	HighIP = "192.168.1.2";
-	HighPort = 0;
-	HighUser = "admin";
-	HighPass = "admin";
-	H264_DVR_SetConnectTime(3000, 1);//设置尝试连接1次，等待时间3s
+	CreateThread(NULL,0,HighPlayerProc,NULL,0,NULL);
+	
+	if (HighWorkDetecting==FALSE)
+	{
+		CreateThread(NULL,0,HighDetectProc,NULL,0,NULL);
+	}
 
-	HighLoginID = H264_DVR_Login(HighIP, HighPort, 
-			HighUser, HighPass, NULL, NULL,NULL);
-
-	//连接视频流
-	H264_DVR_CLIENTINFO playstru;
-
-	playstru.nChannel = 0;
-	playstru.nStream = 0;
-	playstru.nMode = 0;
-	playstru.hWnd = HighPic.m_hWnd;
-	HighPlayhandle = H264_DVR_RealPlay(HighLoginID, &playstru);	
-
-	StatusBar.SetText("请选择监控区域", 1, 0);
+	CreateThread(NULL,0,HighDataGetProc,
+		this,0,NULL);
 
 }
 
@@ -761,8 +905,12 @@ void WorkDlg::OnLinkHighVideo()
 void WorkDlg::OnLinkMoreVideo()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	
-
+	UpdateData(TRUE);
+	IsMorePlaying = FALSE;
+	MoreCollecting = FALSE;
+	Sleep(100);
+	CreateThread(NULL,0,MorePlayerProc,NULL,0,NULL);
+	CreateThread(NULL,0,MoreDataGetProc,NULL,0,NULL);
 
 }
 
@@ -772,7 +920,10 @@ void WorkDlg::OnExitBehaviorVideo()
 {
 	// TODO: 在此添加控件通知处理程序代码
 
-
+	IsBehaviorPlaying = FALSE;
+	BehaviorDetecting = FALSE;
+	BehaviorCollecting = FALSE;
+	BehaviorRecording = FALSE;
 
 }
 
@@ -780,16 +931,19 @@ void WorkDlg::OnExitBehaviorVideo()
 void WorkDlg::OnExitMillVideo()
 {
 	// TODO: 在此添加控件通知处理程序代码
-
-
-
+	IsMillPlaying = FALSE;
+	MillDetecting = FALSE;
+	MillCollecting = FALSE;
+	MillRecording = FALSE;
 }
 
 
 void WorkDlg::OnExitMoreVideo()
 {
 	// TODO: 在此添加控件通知处理程序代码
-
+    IsMorePlaying = FALSE;
+	MoreCollecting = FALSE;
+	MoreRecording = FALSE;
 }
 
 
@@ -797,7 +951,10 @@ void WorkDlg::OnExitHighVideo()
 {
 	// TODO: 在此添加控件通知处理程序代码
 
-	H264_DVR_StopRealPlay(HighPlayhandle,HighPic.m_hWnd); 
+	IsHighPlaying = FALSE;
+	HighWorkDetecting = FALSE;
+	HighCollecting = FALSE;
+	HighRecording = FALSE;
 
 }
 
@@ -812,10 +969,21 @@ void WorkDlg::OnOK()
 void WorkDlg::OnClose()
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	IsHighPlaying = FALSE;
+	IsMillPlaying = FALSE;
+	IsMorePlaying = FALSE;
+	IsBehaviorPlaying = FALSE;
+	MillCollecting = FALSE;
+	BehaviorCollecting = FALSE;
+	HighCollecting = FALSE;
+	MoreCollecting = FALSE;
 	HighWorkDetecting = FALSE;
 	BehaviorDetecting = FALSE;
 	MillDetecting = FALSE;
-
+	MillRecording = FALSE;
+	BehaviorRecording = FALSE;
+	HighRecording = FALSE;
+	MoreRecording = FALSE;
 	KillTimer(1);
 	KillTimer(2);
 	Sleep(200);
@@ -824,24 +992,41 @@ void WorkDlg::OnClose()
 
 
 
+
+void WorkDlg::OnPausePlay()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	IsHighPlaying = FALSE;
+	IsMillPlaying = FALSE;
+	IsMorePlaying = FALSE;
+	IsBehaviorPlaying = FALSE;
+
+
+}
+
+
+void WorkDlg::OnResumePlay()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CreateThread(NULL,0,MorePlayerProc,NULL,0,NULL);
+	CreateThread(NULL,0,MillPlayerProc,NULL,0,NULL);
+	CreateThread(NULL,0,HighPlayerProc,NULL,0,NULL);
+	CreateThread(NULL,0,BehaviorPlayerProc,NULL,0,NULL);
+
+}
+
+
 void WorkDlg::OnRecordHighVideo()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	//H264_DVR_StartDVRRecord(HighPlayhandle, 0 ,SDK_RECORD_MANUAL);
-	CString RecordPath = "D:\\Record\\"+GetDate()
-		+"\\"+GetSaveTime();
-	//开始本地录像
-	H264_DVR_StartLocalRecord(HighPlayhandle,
-		RecordPath.GetBuffer(0),0);
-
+	CreateThread(NULL,0,HighRecordProc,NULL,0,NULL);
 }
 
 
 void WorkDlg::OnStopHighRecord()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	//关闭本地录像
-	H264_DVR_StopLocalRecord(HighPlayhandle);
+	HighRecording = FALSE;
 	AfxMessageBox("录制结束,请到D:\\Record目录下查看");
 }
 
@@ -849,14 +1034,14 @@ void WorkDlg::OnStopHighRecord()
 void WorkDlg::OnRecordBehavior()
 {
 	// TODO: 在此添加控件通知处理程序代码
-
+	CreateThread(NULL,0,BehaviorRecordProc,NULL,0,NULL);
 }
 
 
 void WorkDlg::OnStopBehavior()
 {
 	// TODO: 在此添加控件通知处理程序代码
-
+	BehaviorRecording = FALSE;
 	AfxMessageBox("录制结束,请到D:\\Record目录下查看");
 }
 
@@ -864,14 +1049,14 @@ void WorkDlg::OnStopBehavior()
 void WorkDlg::OnMillRecord()
 {
 	// TODO: 在此添加控件通知处理程序代码
-
+	CreateThread(NULL,0,MillRecordProc,NULL,0,NULL);
 }
 
 
 void WorkDlg::OnStopMillRecord()
 {
 	// TODO: 在此添加控件通知处理程序代码
-
+	MillRecording = FALSE;
 	AfxMessageBox("录制结束,请到D:\\Record目录下查看");
 }
 
@@ -879,14 +1064,14 @@ void WorkDlg::OnStopMillRecord()
 void WorkDlg::OnMoreRecord()
 {
 	// TODO: 在此添加控件通知处理程序代码
-
+	CreateThread(NULL,0,MoreRecordProc,NULL,0,NULL);
 }
 
 
 void WorkDlg::OnStopMoreRecord()
 {
 	// TODO: 在此添加控件通知处理程序代码
-
+	MoreRecording = FALSE;
 	AfxMessageBox("录制结束,请到D:\\Record目录下查看");
 }
 
